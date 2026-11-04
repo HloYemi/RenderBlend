@@ -6,13 +6,7 @@
     },
     "vertex": "renderblender:cosmic",
     "fragment": "renderblender:cosmic",
-    "attributes": [
-        "Position",
-        "Color",
-        "UV0",
-        "UV2",
-        "Normal"
-    ],
+    "attributes": [ "Position", "Color", "UV0" ],
     "samplers": [
         { "name": "Sampler0" },
         { "name": "Sampler2" }
@@ -28,8 +22,8 @@
         { "name": "time", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "yaw", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "pitch", "type": "float", "count": 1, "values": [ 0.0 ] },
-        { "name": "externalScale", "type": "float", "count": 1, "values": [ 0.0 ] },
-        { "name": "opacity", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "externalScale", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "opacity", "type": "float", "count": 1, "values": [ 1.0 ] },
         { "name": "cosmicuvs", "type": "float", "count": 40, "values": [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ] }
     ]
 }
