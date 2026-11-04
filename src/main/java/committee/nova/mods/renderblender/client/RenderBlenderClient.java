@@ -18,6 +18,7 @@ public class RenderBlenderClient {
         event.register(RenderBlenderLib.rl("halo"), HaloModelLoader.INSTANCE);
         event.register(RenderBlenderLib.rl("halo_cosmic"), HaloCosmicModelLoader.INSTANCE);
         event.register(RenderBlenderLib.rl("halo_eternal"), HaloEternalModelLoader.INSTANCE);
+        event.register(RenderBlenderLib.rl("halo_hell"), HaloHellModelLoader.INSTANCE);
         event.register(RenderBlenderLib.rl("scale"), ScaleModelLoader.INSTANCE);
         event.register(RenderBlenderLib.rl("glow_edge"), GlowEdgeModelLoader.INSTANCE);
     }
