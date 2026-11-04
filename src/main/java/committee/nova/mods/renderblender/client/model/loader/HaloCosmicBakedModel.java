@@ -77,6 +77,10 @@ public class HaloCosmicBakedModel extends WrappedItemModel {
             bs.endBatch();
         }
 
+        if (committee.nova.mods.renderblender.client.compat.IrisCompat.shouldSkipCustomShaderRendering()) {
+            return;
+        }
+
         if (RBShaders.COSMIC_SHADER == null || RBShaders.cosmicTime == null) return;
 
         final Minecraft mc = Minecraft.getInstance();
@@ -110,7 +114,7 @@ public class HaloCosmicBakedModel extends WrappedItemModel {
         for (ResourceLocation res : maskSprite) {
             atlasSprite.add(Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
         }
-        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, light, overlay);
+        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItemFromLocations(maskSprite), stack, light, overlay);
     }
 
     @Override

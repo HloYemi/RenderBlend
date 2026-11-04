@@ -74,6 +74,10 @@ public class HaloEternalBakedModel extends WrappedItemModel {
             bs.endBatch();
         }
 
+        if (committee.nova.mods.renderblender.client.compat.IrisCompat.shouldSkipCustomShaderRendering()) {
+            return;
+        }
+
         final Minecraft mc = Minecraft.getInstance();
         float yaw = 0.0f, pitch = 0.0f, scale = 1f;
         if (RBShaders.inventoryRender || transformType == ItemDisplayContext.GUI) {
@@ -105,7 +109,7 @@ public class HaloEternalBakedModel extends WrappedItemModel {
         for (ResourceLocation res : maskSprite) {
             atlasSprite.add(Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
         }
-        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, light, overlay);
+        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItemFromLocations(maskSprite), stack, light, overlay);
     }
 
     @Override

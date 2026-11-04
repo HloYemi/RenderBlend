@@ -65,9 +65,63 @@ public abstract class WrappedItemModel implements PerspectiveModel {
     }
 
 
+        private static final java.util.Map<java.util.List<ResourceLocation>, java.util.List<BakedQuad>> BAKE_QUAD_CACHE =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /**
+     * 按 maskSprite location 列表生成/缓存 quad 列表(借鉴 Enchanted Outlines 的
+     * ModelGeometry 缓存设计)。
+     * <p>
+     * 与原 bakeItem 的区别:原方法每帧根据 sprite 实例重新生成 quad,但几何是帧无关的
+     * (只依赖 sprite 内容与 index),完全可以缓存。此方法按 location 列表做 key
+     * (maskSprite 是 final 字段,同一 BakedModel 复用同一列表实例),命中缓存直接返回,
+     * 大幅降低 CPU 开销。
+     * <p>
+     * WeakHashMap 弱引用:maskSprite 被 GC(BakedModel 被回收)时缓存自动清理。
+     * 资源重载后 CosmicModelLoader.bake 重新构造新的 BakedModel  新 maskSprite 列表
+     *  天然命中新缓存,旧条目随旧列表 GC 而消失。
+     *
+     * @param locations 贴图 location 列表(maskSprite)
+     * @return 生成的 BakedQuad 列表
+     */
+    public static java.util.List<BakedQuad> bakeItemFromLocations(final java.util.List<ResourceLocation> locations) {
+        java.util.List<BakedQuad> cached = BAKE_QUAD_CACHE.get(locations);
+        if (cached != null) {
+            return cached;
+        }
+        java.util.List<BakedQuad> quads = new java.util.ArrayList<>();
+        net.minecraft.client.renderer.texture.TextureAtlas atlas = Minecraft.getInstance()
+                .getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
+        for (int i = 0; i < locations.size(); i++) {
+            TextureAtlasSprite sprite = atlas.apply(locations.get(i));
+            if (sprite == null) {
+                continue;
+            }
+            java.util.List<BlockElement> unbaked = ITEM_MODEL_GENERATOR.processFrames(i, "layer" + i, sprite.contents());
+            for (BlockElement element : unbaked) {
+                for (java.util.Map.Entry<Direction, BlockElementFace> entry : element.faces.entrySet()) {
+                    BakedQuad quad = FACE_BAKERY.bakeQuad(element.from, element.to, entry.getValue(), sprite,
+                            entry.getKey(), new PerspectiveModelState(ImmutableMap.of()),
+                            element.rotation, element.shade);
+                    if (quad != null) {
+                        quads.add(quad);
+                    }
+                }
+            }
+        }
+        java.util.List<BakedQuad> immutable = java.util.List.copyOf(quads);
+        BAKE_QUAD_CACHE.put(locations, immutable);
+        return immutable;
+    }
+
+    public static void invalidateBakeCache() {
+        BAKE_QUAD_CACHE.clear();
+    }
+
     public static List<BakedQuad> bakeItem(final List<TextureAtlasSprite> sprites) {
         final LinkedList<BakedQuad> quads = new LinkedList<>();
         for (final TextureAtlasSprite sprite : sprites) {
+            if (sprite == null) continue;
             final List<BlockElement> unbaked = ITEM_MODEL_GENERATOR.processFrames(sprites.indexOf(sprite), "layer" + sprites.indexOf(sprite), sprite.contents());
             for (final BlockElement element : unbaked) {
                 for (final Map.Entry<Direction, BlockElementFace> entry : element.faces.entrySet()) {

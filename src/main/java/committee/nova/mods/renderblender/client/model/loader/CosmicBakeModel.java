@@ -59,6 +59,10 @@ public class CosmicBakeModel extends WrappedItemModel implements CosmicRenderabl
             bs.endBatch();
         }
 
+        if (committee.nova.mods.renderblender.client.compat.IrisCompat.shouldSkipCustomShaderRendering()) {
+            return;
+        }
+
         if (IrisCompat.shouldDefer(transformType)) {
             CosmicRenderQueue.enqueue(
                     new CosmicRenderCall(
@@ -127,12 +131,16 @@ public class CosmicBakeModel extends WrappedItemModel implements CosmicRenderabl
         }
 
         mc.getItemRenderer().renderQuadList(
-                pStack, cons, bakeItem(atlasSprite),
+                pStack, cons, bakeItemFromLocations(maskSprite),
                 stack, packedLight, packedOverlay
         );
 
         if (source instanceof MultiBufferSource.BufferSource bs) {
             bs.endBatch(RBRenderTypes.COSMIC);
+        }
+
+        if (committee.nova.mods.renderblender.client.compat.IrisCompat.shouldSkipCustomShaderRendering()) {
+            return;
         }
     }
 }
