@@ -1,13 +1,10 @@
 #version 150
 
 uniform sampler2D Sampler0;
-uniform sampler2D Sampler2;
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;
 uniform vec4 ColorModulator;
 uniform float time;
-uniform float yaw;
-uniform float pitch;
 uniform float externalScale;
 uniform float opacity;
 uniform float cosmicuvs[40];
@@ -30,7 +27,8 @@ void main() {
         vec2 minUv = vec2(cosmicuvs[i * 4], cosmicuvs[i * 4 + 1]);
         vec2 maxUv = vec2(cosmicuvs[i * 4 + 2], cosmicuvs[i * 4 + 3]);
         vec2 sampleUv = mix(minUv, maxUv, fract(uv * externalScale + time * 0.1));
-        cosmicColor += texture(Sampler2, sampleUv);
+        // 关键：1.21.1 中 Sampler2 是光照，必须统一从 Sampler0（图集）采样
+        cosmicColor += texture(Sampler0, sampleUv);
     }
     
     cosmicColor /= 10.0;
