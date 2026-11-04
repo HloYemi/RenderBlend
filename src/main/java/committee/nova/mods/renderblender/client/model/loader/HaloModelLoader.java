@@ -50,29 +50,31 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
         public @NotNull BakedModel bake(final @NotNull IGeometryBakingContext owner, final @NotNull ModelBaker bakery,
                                         final @NotNull Function<Material, TextureAtlasSprite> spriteGetter,
                                         final @NotNull ModelState modelTransform, final @NotNull ItemOverrides overrides) {
-            final BakedModel bakedBaseModel = this.baseModel.bake(bakery, this.baseModel, spriteGetter, modelTransform, false);
-        // --- [RenderBlender] 原版底模生成补丁 ---
-        if (bakedBaseModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
-            java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
-            this.baseModel.getMaterials(context::getMaterial, java.util.function.Consumer::accept).forEach(mat -> {
-                if (mat.texture().getPath().contains("layer0") || sprites.isEmpty()) {
-                    sprites.add(spriteGetter.apply(mat));
+            BakedModel finalModel = this.baseModel.bake(bakery, this.baseModel, spriteGetter, modelTransform, false);
+            // --- [RenderBlender] 1.21.1 兼容底模补丁 ---
+            BakedModel finalModel = finalModel;
+            {varName = null; // 解除原变量引用
+ (finalModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
+                java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
+                net.minecraft.client.resources.model.Material layer0 = this.baseModel.getMaterial("layer0");
+                if (layer0 != null) sprites.add(spriteGetter.apply(layer0));
+                net.minecraft.client.resources.model.Material particle = this.baseModel.getMaterial("particle");
+                if (particle != null && particle != layer0) sprites.add(spriteGetter.apply(particle));
+                
+                if (!sprites.isEmpty()) {
+                    java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
+                        committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
+                    finalModel = new net.minecraft.client.resources.model.SimpleBakedModel(
+                        quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
+                        net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
+                        net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
+                    );
                 }
-            });
-            if (!sprites.isEmpty()) {
-                java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
-                    committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
-                bakedBaseModel = new net.minecraft.client.resources.model.SimpleBakedModel(
-                    quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
-                    net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
-                    net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
-                );
             }
-        }
-        // ----------------------------------------
+            // ----------------------------------------
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
             TextureAtlasSprite particle = spriteGetter.apply(particleLocation);
-            return new HaloBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());
+            return new HaloBakedModel(HaloUtils.tintLayers(finalModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());
         }
     }
 }
