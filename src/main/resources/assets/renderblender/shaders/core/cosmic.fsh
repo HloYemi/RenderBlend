@@ -14,18 +14,11 @@ uniform float cosmicuvs[40];
 
 in vec2 texCoord0;
 in vec4 vertexColor;
-in vec3 pos;
 
 out vec4 fragColor;
 
-mat2 rotate(float a) {
-    return mat2(cos(a), -sin(a), sin(a), cos(a));
-}
-
 void main() {
-    vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
-    if (color.a < 0.1) discard;
-    
+    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
     vec2 uv = texCoord0;
     float s = sin(time);
     float c = cos(time);
@@ -34,17 +27,16 @@ void main() {
     
     vec4 cosmicColor = vec4(0.0);
     for (int i = 0; i < 10; i++) {
-        vec2 uv0 = vec2(cosmicuvs[i * 4], cosmicuvs[i * 4 + 1]);
-        vec2 uv1 = vec2(cosmicuvs[i * 4 + 2], cosmicuvs[i * 4 + 3]);
-        vec2 minUv = min(uv0, uv1);
-        vec2 maxUv = max(uv0, uv1);
-        
+        vec2 minUv = vec2(cosmicuvs[i * 4], cosmicuvs[i * 4 + 1]);
+        vec2 maxUv = vec2(cosmicuvs[i * 4 + 2], cosmicuvs[i * 4 + 3]);
         vec2 sampleUv = mix(minUv, maxUv, fract(uv * externalScale + time * 0.1));
-        cosmicColor += texture(Sampler0, sampleUv);
+        cosmicColor += texture(Sampler2, sampleUv);
     }
     
     cosmicColor /= 10.0;
     cosmicColor.a *= opacity;
     
-    fragColor = mix(color, cosmicColor, cosmicColor.a * color.a);
+    vec4 finalColor = mix(color, cosmicColor, cosmicColor.a * color.a);
+    if (finalColor.a < 0.1) discard;
+    fragColor = finalColor * ColorModulator;
 }
