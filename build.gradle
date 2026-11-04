@@ -5,23 +5,31 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.116'
 }
 
-version = minecraft_version + "-" + mod_version
-group = mod_group_id
+// 从 gradle.properties 读取，找不到就用默认值（CI 上 gradle.properties 可能读不到）
+def modId         = findProperty("mod_id")         ?: "renderblender"
+def modName       = findProperty("mod_name")       ?: "RenderBlender"
+def modVersion    = findProperty("mod_version")    ?: "1.1.0"
+def modGroup      = findProperty("mod_group_id")   ?: "committee.nova.mods.renderblender"
+def mcVersion     = findProperty("minecraft_version") ?: "1.21.1"
+def neoVersion    = findProperty("neo_version")    ?: "21.1.146"
+def pMappingsVer  = findProperty("parchment_mappings_version") ?: "2024.11.17"
+def pMcVersion    = findProperty("parchment_minecraft_version") ?: "1.21.1"
+
+version = mcVersion + "-" + modVersion
+group = modGroup
 
 base {
-    archivesName = mod_name
+    archivesName = modName
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 neoForge {
-    version = project.neo_version
+    version = neoVersion
     parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
+        mappingsVersion = pMappingsVer
+        minecraftVersion = pMcVersion
     }
-
-    def modId = project.property("mod_id").toString()
 
     mods {
         "${modId}" {
@@ -57,14 +65,14 @@ tasks.withType(JavaCompile).configureEach {
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
-            minecraft_version: minecraft_version,
-            neo_version      : neo_version,
-            mod_id           : mod_id,
-            mod_name         : mod_name,
-            mod_license      : mod_license,
-            mod_version      : mod_version,
-            mod_authors      : mod_authors,
-            mod_description  : mod_description
+            minecraft_version: mcVersion,
+            neo_version      : neoVersion,
+            mod_id           : modId,
+            mod_name         : modName,
+            mod_license      : (findProperty("mod_license") ?: "LGPL-2.1"),
+            mod_version      : modVersion,
+            mod_authors      : (findProperty("mod_authors") ?: "cnlimiter, covers1624"),
+            mod_description  : (findProperty("mod_description") ?: "Render API library derived from Re:Avaritia")
     ]
     inputs.properties replaceProperties
     expand replaceProperties
