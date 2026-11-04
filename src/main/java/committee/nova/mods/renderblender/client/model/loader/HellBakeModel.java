@@ -1,17 +1,13 @@
 package committee.nova.mods.renderblender.client.model.loader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import committee.nova.mods.renderblender.RenderBlenderLib;
+import committee.nova.mods.renderblender.api.client.model.PerspectiveModelState;
 import committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel;
-import committee.nova.mods.renderblender.api.client.render.CosmicRenderCall;
-import committee.nova.mods.renderblender.api.client.render.CosmicRenderQueue;
 import committee.nova.mods.renderblender.api.client.util.TransformUtils;
-import committee.nova.mods.renderblender.api.iface.transform.CosmicRenderable;
 import committee.nova.mods.renderblender.api.iface.transform.IBowTransform;
 import committee.nova.mods.renderblender.api.iface.transform.IToolTransform;
-import committee.nova.mods.renderblender.client.RBShaders;
-import committee.nova.mods.renderblender.client.compat.IrisCompat;
 import committee.nova.mods.renderblender.client.shader.RBRenderTypes;
 import committee.nova.mods.renderblender.client.shader.RBShaders;
 import net.minecraft.client.Minecraft;
@@ -22,13 +18,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static committee.nova.mods.renderblender.client.shader.RBShaders.COSMIC_UVS;
+import static committee.nova.mods.renderblender.client.shader.RBShaders.HELL_UVS;
 
-public class HellBakeModel extends WrappedItemModel implements CosmicRenderable {
+public class HellBakeModel extends WrappedItemModel {
     private final List<ResourceLocation> maskSprite;
 
     public HellBakeModel(final BakedModel wrapped, final List<ResourceLocation> maskSprite) {
@@ -38,8 +35,7 @@ public class HellBakeModel extends WrappedItemModel implements CosmicRenderable 
     }
 
     @Override
-    public void renderItem(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source,
-                           int packedLight, int packedOverlay) {
+    public void renderItem(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source, int light, int overlay) {
         if (stack.getItem() instanceof IToolTransform) {
             this.parentState = TransformUtils.DEFAULT_TOOL;
         } else if (stack.getItem() instanceof IBowTransform) {
@@ -47,39 +43,14 @@ public class HellBakeModel extends WrappedItemModel implements CosmicRenderable 
         } else {
             this.parentState = TransformUtils.DEFAULT_ITEM;
         }
-        this.renderWrapped(stack, pStack, source, packedLight, packedOverlay, true);
+
+        this.renderWrapped(stack, pStack, source, light, overlay, true);
         if (source instanceof MultiBufferSource.BufferSource bs) {
             bs.endBatch();
         }
 
-        // Iris 延迟渲染
-        if (IrisCompat.shouldDefer(transformType)) {
-            CosmicRenderQueue.enqueue(
-                    new CosmicRenderCall(
-                            this,
-                            stack,
-                            transformType,
-                            pStack,
-                            packedLight,
-                            packedOverlay,
-                            RenderSystem.getProjectionMatrix(),
-                            RenderSystem.getModelViewMatrix()
-                    )
-            );
-            return;
-        }
-
-        // 非 Iris 直接渲染
-        renderCosmicLayer(stack, transformType, pStack, source, packedLight, packedOverlay);
-    }
-
-    @Override
-    public void renderCosmicLayer(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source,
-                                  int packedLight, int packedOverlay) {
         final Minecraft mc = Minecraft.getInstance();
-        float yaw = 0.0f;
-        float pitch = 0.0f;
-        float scale = 1f;
+        float yaw = 0.0f, pitch = 0.0f, scale = 1f;
         if (RBShaders.inventoryRender || transformType == ItemDisplayContext.GUI) {
             scale = 100.0F;
         } else {
@@ -87,27 +58,39 @@ public class HellBakeModel extends WrappedItemModel implements CosmicRenderable 
             pitch = -(float) (mc.player.getXRot() * 2.0f * Math.PI / 360.0);
         }
 
-        RBShaders.hellTime.set(mc.level.getGameTime() % Integer.MAX_VALUE);
+        RBShaders.hellTime.set((System.currentTimeMillis() - RBShaders.renderTime) / 2000.0F);
         RBShaders.hellYaw.set(yaw);
         RBShaders.hellPitch.set(pitch);
         RBShaders.hellExternalScale.set(scale);
+        RBShaders.hellOpacity.set(1.0F);
 
-         else {
-            RBShaders.hellOpacity.set(1.0F);
+        for (int i = 0; i < 10; ++i) {
+            TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(RenderBlenderLib.rl("misc/cosmic_" + i));
+            HELL_UVS[i * 4] = sprite.getU0();
+            HELL_UVS[i * 4 + 1] = sprite.getV0();
+            HELL_UVS[i * 4 + 2] = sprite.getU1();
+            HELL_UVS[i * 4 + 3] = sprite.getV1();
         }
 
         if (RBShaders.hellUVs != null) {
-            RBShaders.hellUVs.set(COSMIC_UVS);
+            RBShaders.hellUVs.set(HELL_UVS);
         }
 
         final VertexConsumer cons = source.getBuffer(RBRenderTypes.HELL);
         List<TextureAtlasSprite> atlasSprite = new ArrayList<>();
         for (ResourceLocation res : maskSprite) {
-            atlasSprite.add(mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
+            atlasSprite.add(Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
         }
-        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, packedLight, packedOverlay);
-        if (source instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch(RBRenderTypes.HELL);
-        }
+        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, light, overlay);
+    }
+
+    @Override
+    public @Nullable PerspectiveModelState getModelState() {
+        return (PerspectiveModelState) this.parentState;
+    }
+
+    @Override
+    public boolean isCosmic() {
+        return true;
     }
 }

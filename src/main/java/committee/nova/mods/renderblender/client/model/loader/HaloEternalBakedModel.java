@@ -1,20 +1,14 @@
 package committee.nova.mods.renderblender.client.model.loader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import committee.nova.mods.renderblender.RenderBlenderLib;
+import committee.nova.mods.renderblender.api.client.model.PerspectiveModelState;
 import committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel;
-import committee.nova.mods.renderblender.api.client.render.CosmicRenderCall;
-import committee.nova.mods.renderblender.api.client.render.CosmicRenderQueue;
 import committee.nova.mods.renderblender.api.client.render.buffer.AlphaOverrideVertexConsumer;
 import committee.nova.mods.renderblender.api.client.util.TransformUtils;
-import committee.nova.mods.renderblender.api.iface.transform.CosmicRenderable;
 import committee.nova.mods.renderblender.api.iface.transform.IBowTransform;
 import committee.nova.mods.renderblender.api.iface.transform.IToolTransform;
-import committee.nova.mods.renderblender.client.RBShaders;
-import committee.nova.mods.renderblender.client.compat.IrisCompat;
-import committee.nova.mods.renderblender.client.model.loader.base.HaloSetting;
-import committee.nova.mods.renderblender.client.model.loader.base.HaloUtils;
 import committee.nova.mods.renderblender.client.shader.RBRenderTypes;
 import committee.nova.mods.renderblender.client.shader.RBShaders;
 import net.minecraft.client.Minecraft;
@@ -27,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,25 +29,23 @@ import java.util.Random;
 
 import static committee.nova.mods.renderblender.client.shader.RBShaders.ETERNAL_UVS;
 
-
-public class HaloEternalBakedModel extends WrappedItemModel implements CosmicRenderable {
+public class HaloEternalBakedModel extends WrappedItemModel {
     private final Random random;
     private final BakedQuad haloQuad;
-    private final HaloSetting setting;
+    private final boolean pulse;
     private final List<ResourceLocation> maskSprite;
 
-    public HaloEternalBakedModel(BakedModel wrapped, TextureAtlasSprite sprite, HaloSetting setting, List<ResourceLocation> maskSprite) {
+    public HaloEternalBakedModel(BakedModel wrapped, TextureAtlasSprite sprite, int color, int size, boolean pulse, List<ResourceLocation> maskSprite) {
         super(wrapped);
         this.random = new Random();
-        this.haloQuad = HaloUtils.generateHaloQuad(sprite, setting.size(), setting.color());
-        this.setting = setting;
+        this.haloQuad = HaloUtils.generateHaloQuad(sprite, size, color);
+        this.pulse = pulse;
         this.maskSprite = maskSprite;
         this.cosmic = true;
     }
 
     @Override
-    public void renderItem(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source,
-                           int packedLight, int packedOverlay) {
+    public void renderItem(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source, int light, int overlay) {
         if (stack.getItem() instanceof IToolTransform) {
             this.parentState = TransformUtils.DEFAULT_TOOL;
         } else if (stack.getItem() instanceof IBowTransform) {
@@ -61,55 +54,27 @@ public class HaloEternalBakedModel extends WrappedItemModel implements CosmicRen
             this.parentState = TransformUtils.DEFAULT_ITEM;
         }
 
-        // 渲染Halo效果
         if (transformType == ItemDisplayContext.GUI) {
             Minecraft.getInstance().getItemRenderer()
-                    .renderQuadList(pStack, source.getBuffer(ItemBlockRenderTypes.getRenderType(stack, true)), List.of(this.haloQuad), stack, packedLight, packedOverlay);
-            if (this.setting.pulse()) {
+                    .renderQuadList(pStack, source.getBuffer(ItemBlockRenderTypes.getRenderType(stack, true)), List.of(this.haloQuad), stack, light, overlay);
+            if (this.pulse) {
                 pStack.pushPose();
                 double scale = random.nextDouble() * 0.15D + 0.95D;
                 double trans = (1.0D - scale) / 2.0D;
                 pStack.translate(trans, trans, 0.0D);
                 pStack.scale((float) scale, (float) scale, 1.0001F);
-                this.renderWrapped(stack, pStack, source, packedLight, packedOverlay, true, (e) -> new AlphaOverrideVertexConsumer(e, 0.6000000238418579D));
+                this.renderWrapped(stack, pStack, source, light, overlay, true, (e) -> new AlphaOverrideVertexConsumer(e, 0.6000000238418579D));
                 pStack.popPose();
             }
         }
 
-        // 渲染基础模型
-        this.renderWrapped(stack, pStack, source, packedLight, packedOverlay, true);
+        this.renderWrapped(stack, pStack, source, light, overlay, true);
         if (source instanceof MultiBufferSource.BufferSource bs) {
             bs.endBatch();
         }
 
-        // Iris 延迟渲染
-        if (IrisCompat.shouldDefer(transformType)) {
-            CosmicRenderQueue.enqueue(
-                    new CosmicRenderCall(
-                            this,
-                            stack,
-                            transformType,
-                            pStack,
-                            packedLight,
-                            packedOverlay,
-                            RenderSystem.getProjectionMatrix(),
-                            RenderSystem.getModelViewMatrix()
-                    )
-            );
-            return;
-        }
-
-        // 非 Iris 直接渲染
-        renderCosmicLayer(stack, transformType, pStack, source, packedLight, packedOverlay);
-    }
-
-    @Override
-    public void renderCosmicLayer(ItemStack stack, ItemDisplayContext transformType, PoseStack pStack, MultiBufferSource source,
-                                  int packedLight, int packedOverlay) {
         final Minecraft mc = Minecraft.getInstance();
-        float yaw = 0.0f;
-        float pitch = 0.0f;
-        float scale = 1f;
+        float yaw = 0.0f, pitch = 0.0f, scale = 1f;
         if (RBShaders.inventoryRender || transformType == ItemDisplayContext.GUI) {
             scale = 100.0F;
         } else {
@@ -117,15 +82,19 @@ public class HaloEternalBakedModel extends WrappedItemModel implements CosmicRen
             pitch = -(float) (mc.player.getXRot() * 2.0f * Math.PI / 360.0);
         }
 
-        RBShaders.eternalTime.set(mc.level.getGameTime() % Integer.MAX_VALUE);
+        RBShaders.eternalTime.set((System.currentTimeMillis() - RBShaders.renderTime) / 2000.0F);
         RBShaders.eternalYaw.set(yaw);
         RBShaders.eternalPitch.set(pitch);
         RBShaders.eternalExternalScale.set(scale);
+        RBShaders.eternalOpacity.set(1.5F);
 
-         else {
-            RBShaders.eternalOpacity.set(1.5F);
+        for (int i = 0; i < 10; ++i) {
+            TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(RenderBlenderLib.rl("misc/cosmic_" + i));
+            ETERNAL_UVS[i * 4] = sprite.getU0();
+            ETERNAL_UVS[i * 4 + 1] = sprite.getV0();
+            ETERNAL_UVS[i * 4 + 2] = sprite.getU1();
+            ETERNAL_UVS[i * 4 + 3] = sprite.getV1();
         }
-
         if (RBShaders.eternalUVs != null) {
             RBShaders.eternalUVs.set(ETERNAL_UVS);
         }
@@ -135,6 +104,16 @@ public class HaloEternalBakedModel extends WrappedItemModel implements CosmicRen
         for (ResourceLocation res : maskSprite) {
             atlasSprite.add(Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
         }
-        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, packedLight, packedOverlay);
+        mc.getItemRenderer().renderQuadList(pStack, cons, bakeItem(atlasSprite), stack, light, overlay);
+    }
+
+    @Override
+    public @Nullable PerspectiveModelState getModelState() {
+        return (PerspectiveModelState) this.parentState;
+    }
+
+    @Override
+    public boolean isCosmic() {
+        return true;
     }
 }
