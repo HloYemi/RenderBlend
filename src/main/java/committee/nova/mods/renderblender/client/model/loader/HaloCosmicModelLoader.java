@@ -55,7 +55,7 @@ public class HaloCosmicModelLoader extends BaseModelLoader<HaloCosmicModelLoader
 
             // 创建融合了Halo和Cosmic效果的模型
             return new HaloCosmicBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()),
-                    particle, this.setting, maskTextures);
+                    particle, this.setting.color(), this.setting.size(), this.setting.pulse(), maskTextures);
         }
     }
 }

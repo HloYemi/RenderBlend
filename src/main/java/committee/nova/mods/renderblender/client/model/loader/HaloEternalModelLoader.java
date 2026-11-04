@@ -56,7 +56,7 @@ public class HaloEternalModelLoader extends BaseModelLoader<HaloEternalModelLoad
 
             // 创建融合了Halo和Eternal效果的模型
             return new HaloEternalBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()),
-                    particle, this.setting, maskTextures);
+                    particle, this.setting.color(), this.setting.size(), this.setting.pulse(), maskTextures);
         }
     }
 }

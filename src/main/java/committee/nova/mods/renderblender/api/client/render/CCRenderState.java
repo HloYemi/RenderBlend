@@ -105,7 +105,13 @@ public class CCRenderState {
      * @param r The {@link BufferBuilder}.
      */
     public void bind(BufferBuilder r) {
-        bind(r, r.format());
+        try {
+            java.lang.reflect.Field f = com.mojang.blaze3d.vertex.BufferBuilder.class.getDeclaredField("format");
+            f.setAccessible(true);
+            bind(r, (VertexFormat) f.get(r));
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Cannot read BufferBuilder.format", e);
+        }
     }
 
     /**

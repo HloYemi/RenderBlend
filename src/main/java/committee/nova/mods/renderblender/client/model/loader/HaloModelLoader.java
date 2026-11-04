@@ -34,7 +34,7 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
     public @NotNull HaloItemModelGeometry read(@NotNull JsonObject modelContents, JsonDeserializationContext deserializationContext) throws JsonParseException {
         BlockModel baseModel = deserializationContext.deserialize(clear(modelContents, "halo"), BlockModel.class);
         HaloSetting setting = getHalo(modelContents);
-        return new HaloItemModelGeometry(baseModel, setting.color(), setting.size(), setting.pulse());
+        return new HaloItemModelGeometry(baseModel, setting);
     }
 
 
