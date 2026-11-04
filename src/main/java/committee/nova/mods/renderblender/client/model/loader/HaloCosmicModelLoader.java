@@ -14,13 +14,15 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.client.resources.model.SimpleBakedModel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
-
 
 public class HaloCosmicModelLoader extends BaseModelLoader<HaloCosmicModelLoader.HaloCosmicGeometry> {
     public static final HaloCosmicModelLoader INSTANCE = new HaloCosmicModelLoader();
@@ -28,50 +30,38 @@ public class HaloCosmicModelLoader extends BaseModelLoader<HaloCosmicModelLoader
     @Override
     public @NotNull HaloCosmicGeometry read(@NotNull JsonObject modelContents, JsonDeserializationContext deserializationContext) throws JsonParseException {
         BlockModel baseModel = deserializationContext.deserialize(clear(modelContents, "halo", "cosmic"), BlockModel.class);
+        List<ResourceLocation> maskTextures = getMasks(modelContents, "cosmic");
         HaloSetting setting = getHalo(modelContents);
-        List<ResourceLocation> cosmicMaskTexture = getMasks(modelContents, "cosmic");
-
-        return new HaloCosmicGeometry(baseModel, setting, cosmicMaskTexture);
+        return new HaloCosmicGeometry(baseModel, maskTextures, setting);
     }
 
     public static class HaloCosmicGeometry extends BaseGeometry<HaloCosmicGeometry> {
-        private final HaloSetting setting;
         private final List<ResourceLocation> maskTextures;
+        private final HaloSetting setting;
 
-        public HaloCosmicGeometry(final BlockModel baseModel, final HaloSetting setting, final List<ResourceLocation> maskTextures) {
+        public HaloCosmicGeometry(final BlockModel baseModel, final List<ResourceLocation> maskTextures, final HaloSetting setting) {
             super(baseModel);
-            this.setting = setting;
             this.maskTextures = maskTextures;
+            this.setting = setting;
         }
 
         @Override
-        public @NotNull BakedModel bake(@NotNull IGeometryBakingContext context, @NotNull ModelBaker baker, @NotNull Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ModelState modelState, @NotNull ItemOverrides overrides)  {
-            // 烘焙基础模型
-            BakedModel finalModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
-            // --- [RenderBlender] 1.21.1 兼容底模生成 ---
-            finalModel = finalModel == null ? null : finalModel; // 确保不是 final
- (finalModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
-                net.minecraft.client.resources.model.Material layer0 = this.baseModel.getMaterial("layer0");
+        public @NotNull BakedModel bake(@NotNull IGeometryBakingContext context, @NotNull ModelBaker baker,
+                               @NotNull Function<Material, @NotNull TextureAtlasSprite> spriteGetter,
+                               @NotNull ModelState modelState, @NotNull ItemOverrides overrides) {
+            BakedModel baseBakedModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
+            if (baseBakedModel.getQuads(null, null, RandomSource.create()).isEmpty()) {
+                Material layer0 = this.baseModel.getMaterial("layer0");
                 if (layer0 != null) {
-                    net.minecraft.client.renderer.texture.TextureAtlasSprite sprite = spriteGetter.apply(layer0);
-                    java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
-                        committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(java.util.List.of(sprite));
-                    finalModel = new net.minecraft.client.resources.model.SimpleBakedModel(
-                        quads, new java.util.HashMap<>(), true, false, true, sprite, 
-                        this.baseModel.getTransforms(), 
-                        net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
-                    );
+                    TextureAtlasSprite sprite = spriteGetter.apply(layer0);
+                    List<net.minecraft.client.renderer.block.model.BakedQuad> quads = committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(List.of(sprite));
+                    baseBakedModel = new SimpleBakedModel(quads, new HashMap<>(), true, false, true, sprite, this.baseModel.getTransforms(), ItemOverrides.EMPTY);
                 }
             }
-            // ----------------------------------------
-
-            // 获取Halo纹理
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
-            TextureAtlasSprite particle = spriteGetter.apply(particleLocation);
-
-            // 创建融合了Halo和Cosmic效果的模型
-            return new HaloCosmicBakedModel(HaloUtils.tintLayers(finalModel, this.setting.layerColors()),
-                    particle, this.setting.color(), this.setting.size(), this.setting.pulse(), maskTextures);
+            TextureAtlasSprite particle = spriteGetter.apply(particleLocation != null ? particleLocation : this.baseModel.getMaterial("layer0"));
+            
+            return new HaloCosmicBakedModel(HaloUtils.tintLayers(baseBakedModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse(), maskTextures);
         }
     }
 }

@@ -151,10 +151,10 @@ void main (void)
             }
 
             // get the iicon uvs for the tile
-            float umin = cosmicuvs[symbol][0][0];
-            float umax = cosmicuvs[symbol][1][0];
-            float vmin = cosmicuvs[symbol][0][1];
-            float vmax = cosmicuvs[symbol][1][1];
+            float umin = vec2(cosmicuvs[(symbol) * 4], cosmicuvs[(symbol) * 4 + 1])[0];
+            float umax = vec2(cosmicuvs[(symbol) * 4 + 2], cosmicuvs[(symbol) * 4 + 3])[0];
+            float vmin = vec2(cosmicuvs[(symbol) * 4], cosmicuvs[(symbol) * 4 + 1])[1];
+            float vmax = vec2(cosmicuvs[(symbol) * 4 + 2], cosmicuvs[(symbol) * 4 + 3])[1];
 
             // interpolate based on tile uvs
             cosmictex.x = umin * (1.0-oru) + umax * oru;

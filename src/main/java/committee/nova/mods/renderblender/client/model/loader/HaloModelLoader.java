@@ -14,20 +14,17 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.client.resources.model.SimpleBakedModel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 
-/**
- * Name: RenderBlenderLib-forge / HaloItemModelLoader
- * Author: cnlimiter
- * CreateTime: 2023/9/18 23:45
- * Description:
- */
-
 public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemModelGeometry> {
-
     public static final HaloModelLoader INSTANCE = new HaloModelLoader();
 
     @Override
@@ -36,7 +33,6 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
         HaloSetting setting = getHalo(modelContents);
         return new HaloItemModelGeometry(baseModel, setting);
     }
-
 
     public static class HaloItemModelGeometry extends BaseGeometry<HaloItemModelGeometry> {
         private final HaloSetting setting;
@@ -47,29 +43,22 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
         }
 
         @Override
-        public @NotNull BakedModel bake(final @NotNull IGeometryBakingContext owner, final @NotNull ModelBaker bakery,
-                                        final @NotNull Function<Material, TextureAtlasSprite> spriteGetter,
-                                        final @NotNull ModelState modelTransform, final @NotNull ItemOverrides overrides) {
-            BakedModel finalModel = this.baseModel.bake(bakery, this.baseModel, spriteGetter, modelTransform, false);
-            // --- [RenderBlender] 1.21.1 兼容底模生成 ---
-            finalModel = finalModel == null ? null : finalModel; // 确保不是 final
- (finalModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
-                net.minecraft.client.resources.model.Material layer0 = this.baseModel.getMaterial("layer0");
+        public @NotNull BakedModel bake(@NotNull IGeometryBakingContext context, @NotNull ModelBaker baker,
+                               @NotNull Function<Material, @NotNull TextureAtlasSprite> spriteGetter,
+                               @NotNull ModelState modelState, @NotNull ItemOverrides overrides) {
+            BakedModel baseBakedModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
+            if (baseBakedModel.getQuads(null, null, RandomSource.create()).isEmpty()) {
+                Material layer0 = this.baseModel.getMaterial("layer0");
                 if (layer0 != null) {
-                    net.minecraft.client.renderer.texture.TextureAtlasSprite sprite = spriteGetter.apply(layer0);
-                    java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
-                        committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(java.util.List.of(sprite));
-                    finalModel = new net.minecraft.client.resources.model.SimpleBakedModel(
-                        quads, new java.util.HashMap<>(), true, false, true, sprite, 
-                        this.baseModel.getTransforms(), 
-                        net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
-                    );
+                    TextureAtlasSprite sprite = spriteGetter.apply(layer0);
+                    List<net.minecraft.client.renderer.block.model.BakedQuad> quads = committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(List.of(sprite));
+                    baseBakedModel = new SimpleBakedModel(quads, new HashMap<>(), true, false, true, sprite, this.baseModel.getTransforms(), ItemOverrides.EMPTY);
                 }
             }
-            // ----------------------------------------
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
-            TextureAtlasSprite particle = spriteGetter.apply(particleLocation);
-            return new HaloBakedModel(HaloUtils.tintLayers(finalModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());
+            TextureAtlasSprite particle = spriteGetter.apply(particleLocation != null ? particleLocation : this.baseModel.getMaterial("layer0"));
+            
+            return new HaloBakedModel(HaloUtils.tintLayers(baseBakedModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());
         }
     }
 }
