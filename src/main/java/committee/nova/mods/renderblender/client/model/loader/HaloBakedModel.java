@@ -1,6 +1,7 @@
 package committee.nova.mods.renderblender.client.model.loader;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+
+import committee.nova.mods.renderblender.client.model.loader.base.HaloUtils;import com.mojang.blaze3d.vertex.PoseStack;
 import committee.nova.mods.renderblender.api.client.model.CachedFormat;
 import committee.nova.mods.renderblender.api.client.model.PerspectiveModelState;
 import committee.nova.mods.renderblender.api.client.model.Quad;

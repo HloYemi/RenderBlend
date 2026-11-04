@@ -1,6 +1,5 @@
 package committee.nova.mods.renderblender.api.utils.lang;
 
-import lombok.Getter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -11,7 +10,6 @@ import net.minecraft.network.chat.MutableComponent;
  * Date: 2022/4/2 12:44
  * Version: 1.0
  */
-@Getter
 public class Localizable {
     private final String key;
     private final ChatFormatting defaultColor;

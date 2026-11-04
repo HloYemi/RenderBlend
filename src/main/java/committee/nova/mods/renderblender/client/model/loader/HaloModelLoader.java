@@ -34,7 +34,7 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
     public @NotNull HaloItemModelGeometry read(@NotNull JsonObject modelContents, JsonDeserializationContext deserializationContext) throws JsonParseException {
         BlockModel baseModel = deserializationContext.deserialize(clear(modelContents, "halo"), BlockModel.class);
         HaloSetting setting = getHalo(modelContents);
-        return new HaloItemModelGeometry(baseModel, setting);
+        return new HaloItemModelGeometry(baseModel, setting.color(), setting.size(), setting.pulse());
     }
 
 
@@ -53,8 +53,7 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
             final BakedModel bakedBaseModel = this.baseModel.bake(bakery, this.baseModel, spriteGetter, modelTransform, false);
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
             TextureAtlasSprite particle = spriteGetter.apply(particleLocation);
-            return new HaloBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()), particle,
-                    this.setting);
+            return new HaloBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());
         }
     }
 }

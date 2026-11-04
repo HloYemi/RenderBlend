@@ -105,7 +105,7 @@ public class CCRenderState {
      * @param r The {@link BufferBuilder}.
      */
     public void bind(BufferBuilder r) {
-        bind(r, r.format);
+        bind(r, r.format());
     }
 
     /**

@@ -1,12 +1,15 @@
 package committee.nova.mods.renderblender.api.utils.vec.uv;
 
+import committee.nova.mods.renderblender.api.client.render.CCRenderState;
+import committee.nova.mods.renderblender.api.client.render.pipeline.IVertexOperation;
 import committee.nova.mods.renderblender.api.utils.vec.ITransformation;
 
 /**
- * UV 变换抽象基类。
- * 已剥离 IVertexOperation 依赖（该依赖在完整渲染管线中才需要）。
+ * Abstract supertype for any UV transformation
  */
-public abstract class UVTransformation extends ITransformation<UV, UVTransformation> {
+public abstract class UVTransformation extends ITransformation<UV, UVTransformation> implements IVertexOperation {
+
+    public static final int operationIndex = IVertexOperation.registerOperation();
 
     public UVTransformation at(UV point) {
         return new UVTransformationList(new UVTranslation(-point.u, -point.v), this, new UVTranslation(point.u, point.v));
@@ -15,4 +18,22 @@ public abstract class UVTransformation extends ITransformation<UV, UVTransformat
     public UVTransformationList with(UVTransformation t) {
         return new UVTransformationList(this, t);
     }
+
+    @Override
+    public boolean load(CCRenderState ccrs) {
+        return !isRedundant();
+    }
+
+    @Override
+    public void operate(CCRenderState ccrs) {
+        apply(ccrs.vert.uv);
+        ccrs.sprite = null;
+    }
+
+    @Override
+    public int operationID() {
+        return operationIndex;
+    }
 }
+
+

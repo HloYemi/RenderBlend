@@ -113,7 +113,11 @@ public abstract class WrappedItemModel implements PerspectiveModel {
         return this.wrapped.usesBlockLight();
     }
 
-    /**
+
+
+    public boolean isCosmic() {
+        return this.cosmic;
+    }    /**
      * Render the wrapped model.
      * <p>
      * This does not take into account all the special edge cases hardcoded into
