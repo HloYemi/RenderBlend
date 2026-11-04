@@ -41,6 +41,25 @@ public class HellModelLoader extends BaseModelLoader<HellModelLoader.HellGeometr
         @Override
         public @NotNull BakedModel bake(@NotNull IGeometryBakingContext context, @NotNull ModelBaker baker, @NotNull Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ModelState modelState, @NotNull ItemOverrides overrides)  {
             BakedModel baseBakedModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
+        // --- [RenderBlender] 原版底模生成补丁 ---
+        if (baseBakedModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
+            java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
+            this.baseModel.getMaterials(context::getMaterial, java.util.function.Consumer::accept).forEach(mat -> {
+                if (mat.texture().getPath().contains("layer0") || sprites.isEmpty()) {
+                    sprites.add(spriteGetter.apply(mat));
+                }
+            });
+            if (!sprites.isEmpty()) {
+                java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
+                    committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
+                baseBakedModel = new net.minecraft.client.resources.model.SimpleBakedModel(
+                    quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
+                    net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
+                    net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
+                );
+            }
+        }
+        // ----------------------------------------
             return new HellBakeModel(baseBakedModel, maskTextures);
         }
     }

@@ -51,6 +51,25 @@ public class HaloModelLoader extends BaseModelLoader<HaloModelLoader.HaloItemMod
                                         final @NotNull Function<Material, TextureAtlasSprite> spriteGetter,
                                         final @NotNull ModelState modelTransform, final @NotNull ItemOverrides overrides) {
             final BakedModel bakedBaseModel = this.baseModel.bake(bakery, this.baseModel, spriteGetter, modelTransform, false);
+        // --- [RenderBlender] 原版底模生成补丁 ---
+        if (bakedBaseModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
+            java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
+            this.baseModel.getMaterials(context::getMaterial, java.util.function.Consumer::accept).forEach(mat -> {
+                if (mat.texture().getPath().contains("layer0") || sprites.isEmpty()) {
+                    sprites.add(spriteGetter.apply(mat));
+                }
+            });
+            if (!sprites.isEmpty()) {
+                java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
+                    committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
+                bakedBaseModel = new net.minecraft.client.resources.model.SimpleBakedModel(
+                    quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
+                    net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
+                    net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
+                );
+            }
+        }
+        // ----------------------------------------
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
             TextureAtlasSprite particle = spriteGetter.apply(particleLocation);
             return new HaloBakedModel(HaloUtils.tintLayers(bakedBaseModel, this.setting.layerColors()), particle, this.setting.color(), this.setting.size(), this.setting.pulse());

@@ -48,6 +48,25 @@ public class HaloCosmicModelLoader extends BaseModelLoader<HaloCosmicModelLoader
         public @NotNull BakedModel bake(@NotNull IGeometryBakingContext context, @NotNull ModelBaker baker, @NotNull Function<Material, TextureAtlasSprite> spriteGetter, @NotNull ModelState modelState, @NotNull ItemOverrides overrides)  {
             // 烘焙基础模型
             BakedModel bakedBaseModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
+        // --- [RenderBlender] 原版底模生成补丁 ---
+        if (bakedBaseModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
+            java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
+            this.baseModel.getMaterials(context::getMaterial, java.util.function.Consumer::accept).forEach(mat -> {
+                if (mat.texture().getPath().contains("layer0") || sprites.isEmpty()) {
+                    sprites.add(spriteGetter.apply(mat));
+                }
+            });
+            if (!sprites.isEmpty()) {
+                java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
+                    committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
+                bakedBaseModel = new net.minecraft.client.resources.model.SimpleBakedModel(
+                    quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
+                    net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
+                    net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
+                );
+            }
+        }
+        // ----------------------------------------
 
             // 获取Halo纹理
             Material particleLocation = this.baseModel.getMaterial(this.setting.texture());
