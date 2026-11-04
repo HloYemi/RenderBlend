@@ -52,22 +52,17 @@ public class CosmicModelLoader extends BaseModelLoader<CosmicModelLoader.CosmicG
                                @NotNull Function<Material, @NotNull TextureAtlasSprite> spriteGetter,
                                @NotNull ModelState modelState, @NotNull ItemOverrides overrides) {
             BakedModel finalModel = this.baseModel.bake(baker, this.baseModel, spriteGetter, modelState, true);
-            // --- [RenderBlender] 1.21.1 兼容底模补丁 ---
-            BakedModel finalModel = finalModel;
-            {varName = null; // 解除原变量引用
+            // --- [RenderBlender] 1.21.1 兼容底模生成 ---
+            finalModel = finalModel == null ? null : finalModel; // 确保不是 final
  (finalModel.getQuads(null, null, net.minecraft.util.RandomSource.create()).isEmpty()) {
-                java.util.List<net.minecraft.client.renderer.texture.TextureAtlasSprite> sprites = new java.util.ArrayList<>();
                 net.minecraft.client.resources.model.Material layer0 = this.baseModel.getMaterial("layer0");
-                if (layer0 != null) sprites.add(spriteGetter.apply(layer0));
-                net.minecraft.client.resources.model.Material particle = this.baseModel.getMaterial("particle");
-                if (particle != null && particle != layer0) sprites.add(spriteGetter.apply(particle));
-                
-                if (!sprites.isEmpty()) {
+                if (layer0 != null) {
+                    net.minecraft.client.renderer.texture.TextureAtlasSprite sprite = spriteGetter.apply(layer0);
                     java.util.List<net.minecraft.client.renderer.block.model.BakedQuad> quads = 
-                        committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(sprites);
+                        committee.nova.mods.renderblender.api.client.model.bakedmodels.WrappedItemModel.bakeItem(java.util.List.of(sprite));
                     finalModel = new net.minecraft.client.resources.model.SimpleBakedModel(
-                        quads, new java.util.HashMap<>(), true, false, true, sprites.get(0), 
-                        net.minecraft.client.renderer.block.model.ItemTransforms.NO_TRANSFORMS, 
+                        quads, new java.util.HashMap<>(), true, false, true, sprite, 
+                        this.baseModel.getTransforms(), 
                         net.minecraft.client.renderer.block.model.ItemOverrides.EMPTY
                     );
                 }
