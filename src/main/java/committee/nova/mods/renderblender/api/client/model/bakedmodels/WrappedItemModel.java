@@ -173,6 +173,19 @@ public abstract class WrappedItemModel implements PerspectiveModel {
         return this.wrapped.usesBlockLight();
     }
 
+    /**
+     * 是否为 cosmic 系列模型(由子类 BakeModel 覆写为 true)。
+     * <p>
+     * 原 WrappedItemModel 里就有这个字段方法,子类 BakeModel 都带
+     * {@code @Override public boolean isCosmic()}。重写本类时不可遗漏,
+     * 否则 5 个 BakeModel 子类编译报"method does not override"。
+     *
+     * @return true = cosmic 系列(影响 ItemOverrides 行为 / 客户端视觉判断)
+     */
+    public boolean isCosmic() {
+        return this.cosmic;
+    }
+
     protected void renderWrapped(ItemStack stack, PoseStack pStack, MultiBufferSource buffers,
                                  int packedLight, int packedOverlay, boolean fabulous) {
         renderWrapped(stack, pStack, buffers, packedLight, packedOverlay, fabulous, Function.identity());
