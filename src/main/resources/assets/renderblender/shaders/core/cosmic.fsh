@@ -1,18 +1,10 @@
 #version 150
 
-#moj_import <fog.glsl>
-
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler2;
-
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;
 uniform vec4 ColorModulator;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec4 FogColor;
-uniform int FogShape;
-
 uniform float time;
 uniform float yaw;
 uniform float pitch;
@@ -55,5 +47,4 @@ void main() {
     cosmicColor.a *= opacity;
     
     fragColor = mix(color, cosmicColor, cosmicColor.a * color.a);
-    fragColor = linear_fog(fragColor, vertexDistance(pos), FogStart, FogEnd, FogColor, FogShape);
 }

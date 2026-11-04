@@ -1,7 +1,6 @@
 package committee.nova.mods.renderblender.client.model.loader;
 
-
-import committee.nova.mods.renderblender.client.model.loader.base.HaloUtils;import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import committee.nova.mods.renderblender.RenderBlenderLib;
 import committee.nova.mods.renderblender.api.client.model.PerspectiveModelState;
@@ -51,6 +50,10 @@ public class HaloCosmicBakedModel extends WrappedItemModel {
             this.parentState = TransformUtils.DEFAULT_TOOL;
         } else if (stack.getItem() instanceof IBowTransform) {
             this.parentState = TransformUtils.DEFAULT_BOW;
+        } else if (stack.getItem() instanceof net.minecraft.world.item.SwordItem || 
+                   stack.getItem() instanceof net.minecraft.world.item.DiggerItem || 
+                   stack.getItem() instanceof net.minecraft.world.item.TridentItem) {
+            this.parentState = TransformUtils.DEFAULT_TOOL;
         } else {
             this.parentState = TransformUtils.DEFAULT_ITEM;
         }
@@ -72,6 +75,8 @@ public class HaloCosmicBakedModel extends WrappedItemModel {
         if (source instanceof MultiBufferSource.BufferSource bs) {
             bs.endBatch();
         }
+
+        if (RBShaders.COSMIC_SHADER == null || RBShaders.cosmicTime == null) return;
 
         final Minecraft mc = Minecraft.getInstance();
         float yaw = 0.0f, pitch = 0.0f, scale = 1f;
