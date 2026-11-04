@@ -1,0 +1,14 @@
+build/
+.gradle/
+.idea/
+*.iml
+.vscode/
+*.ipr
+*.iws
+_ref_re_avaritia/
+_patch_backup_*/
+*.log
+errors_only.txt
+diff_report.txt
+.DS_Store
+Thumbs.db
