@@ -12,3 +12,5 @@ errors_only.txt
 diff_report.txt
 .DS_Store
 Thumbs.db
+# Backup files
+*.bak-*
